@@ -1,0 +1,47 @@
+---
+title: "Capstone Presentaion"
+author: "maisam"
+date: "6/7/2020"
+output: ioslides_presentation
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Introduction
+The goal of the Data Science Capstone Project from [Johns Hopkins University](https://www.jhsph.edu/) (JHU) is
+to create a usable application on natural language processing. This capstone project
+is offered in collaboration with [SwiftKey](https://swiftkey.com/en).
+
+The objective of the project is to build a functioning predictive text model. 
+The data is from a corpus called 
+[HC Corpora](https://web-beta.archive.org/web/20160930083655/http://www.corpora.heliohost.org/aboutcorpus.html), and,
+for this application, only the english datasets have been utilized.
+
+For this project, the Text Mining packages **tm** was used, along with the data manipulation
+package **dplyr** and the package **doParallel**. The app was created using the **shiny** package.
+
+
+## Pridective Model
+To build the predictive model, 1.000.000 lines from all twitter, blogs and news datasets were sampled. The sample
+dataset was then cleaned, by removing all non-ascii characters, like emoji, being converted to lowercase letters and then
+by removing all contractions, punctuation, numbers, profanities, leftout letters and extra whitespaces.
+
+The data was then tokenized to form **Maximum Likelihood Estimation** (MLE) matrices of various n-grams. For the sake of accuracy, all frequencies up to 6-grams were computed.
+
+Finally, the top 3 predictions, using a simple back-off model, are being calculated as predictions to the user input. The reason for having 3 predictions instead of 1 is that the accuracy *the user experiences* is substantially increased.
+
+## Shiny Application
+You can find the application [here](https://mraza8149.shinyapps.io/assignment/?_ga=2.185542189.508001157.1591458801-1777910182.1591458801).
+The application provides a prediction almost instantly.
+![capstone](Capture.png)  
+
+
+## Additional Info
+
+- next word prediction app is hosted on shinyapps.io [here](https://mraza8149.shinyapps.io/assignment/?_ga=2.185542189.508001157.1591458801-1777910182.1591458801).  
+- You can find all the code, the milestone report, the presentation etc. in this Github repo [here](https://github.com/maisam8149/capstone).  
+- Learn more about the Data Science Coursera Specialization [here](https://www.coursera.org/specializations/jhu-data-science).  
