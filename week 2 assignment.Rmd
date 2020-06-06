@@ -1,0 +1,150 @@
+---
+title: "Week 2 Assignment"
+author: "maisam"
+date: "5/29/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Packages
+In this project we are using ggplot2 for our plots and for Natural language processing we are going to use tm and Rweka. For some string processing we are using strigi package.
+
+```{r }
+library(ggplot2)
+library(dplyr)
+library(tm)
+library(stringi)
+library(RWeka)
+library(wordcloud)
+
+```
+
+## Data Laoding
+We have already downloaded the data from https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip in our local system.
+
+
+```{r eval=TRUE}
+file_conn = file("~/en_US/en_US.blogs.txt")
+data_blogs <- readLines(file_conn, encoding="UTF-8", skipNul=TRUE)
+close(file_conn)
+
+file_conn = file("~/en_US/en_US.news.txt")
+data_news <- readLines(file_conn, encoding = "UTF-8", skipNul = TRUE)
+close(file_conn)
+
+file_conn = file("~/en_US/en_US.twitter.txt")
+data_twitter <- readLines(file_conn, encoding = "UTF-8", skipNul = TRUE)
+close(file_conn)
+
+
+```
+
+
+## Basic Statisitcs
+
+we are calculating size of our files in MB using file info method and also word cound,no of lines and no of characters using strigi which is a string processing package.
+```{r }
+data_stats <- data.frame(File_Name=c("US_blogs", "US_news", "US_twitter"), 
+                         FileSize=c(file.info("./en_US/en_US.blogs.txt")$size/1024*1024, file.info("./en_US/en_US.news.txt")$size/1024*1024, file.info("./en_US/en_US.twitter.txt")$size/1024*1024),
+                         WordCount=sapply(list(data_blogs, data_news, data_twitter), stri_stats_latex)[4,], 
+                         t(rbind(sapply(list(data_blogs, data_news, data_twitter), stri_stats_general)[c('Lines','Chars'),]
+                         )))
+head(data_stats)
+
+
+```
+
+
+## Sampling and Cleaning Data
+As the data size is huge, we can sample of data to train our models on the smaller sampled dataset. we are going to use 5% sample of data. Once we have sampled the data we can clean it using. We are using tm package for that. We are converting everything to lover case and removing white spaces, punctuation, stop words, numbers etc.
+```{r }
+set.seed(12345)
+test_data <- c(sample(data_blogs, length(data_blogs) * 0.005),
+               sample(data_news, length(data_news) * 0.005),
+               sample(data_twitter, length(data_twitter) * 0.005)
+)
+
+test_data<-iconv(test_data,"UTF-8","ASCII",sub="")
+sample_data<-VCorpus(VectorSource(test_data))
+sample_data<-tm_map(sample_data,tolower)
+sample_data<-tm_map(sample_data,stripWhitespace)
+sample_data<-tm_map(sample_data,removePunctuation)
+sample_data<-tm_map(sample_data,removeNumbers)
+sample_data<-tm_map(sample_data,PlainTextDocument)
+
+
+```
+
+
+## Creating N-grams
+We have cleaned and sampled our data. we have done some preprocessing for our data. Now we can build our basic unigram, bi-grams and tri-grams. We are using RWeka packge for this purpose.
+
+```{r }
+
+unigram <- function(x) NGramTokenizer(x, Weka_control(min=1, max=1))
+bigram <- function(x) NGramTokenizer(x, Weka_control(min=2, max=2))
+trigram <- function(x) NGramTokenizer(x, Weka_control(min=3, max=3))
+
+
+unidtf <- TermDocumentMatrix(sample_data, control=list(tokenize=unigram))
+bidtf <- TermDocumentMatrix(sample_data, control=list(tokenize=bigram))
+tridtf <- TermDocumentMatrix(sample_data, control=list(tokenize=trigram))
+
+uni_tf <- findFreqTerms(unidtf, lowfreq = 50 )
+bi_tf <- findFreqTerms(bidtf, lowfreq = 50 )
+tri_tf <- findFreqTerms(tridtf, lowfreq = 10 )
+
+uni_freq <- rowSums(as.matrix(unidtf[uni_tf, ]))
+uni_freq <- data.frame(words=names(uni_freq), frequency=uni_freq)
+
+bi_freq <- rowSums(as.matrix(bidtf[bi_tf, ]))
+bi_freq <- data.frame(words=names(bi_freq), frequency=bi_freq)
+
+tri_freq <- rowSums(as.matrix(tridtf[tri_tf, ]))
+tri_freq <- data.frame(words=names(tri_freq), frequency=tri_freq)
+
+head(bi_freq)
+
+```
+
+## Plotting N-gram Data
+Once we have created corresponding n-grams, we can plot their frequency plot. Also it would be nice to see a pictorial version of word frequency using wordcoud package
+
+```{r }
+wordcloud(words=uni_freq$words, freq=uni_freq$frequency, max.words=50, colors = brewer.pal(4, "Dark2"))
+
+```
+
+
+```{r }
+plot_freq <- ggplot(data = uni_freq[order(-uni_freq$frequency),][1:15, ], aes(x = reorder(words, -frequency), y=frequency)) +
+  geom_bar(stat="identity", fill="blue") + 
+  ggtitle("Top Unigram") + xlab("words") +  ylab("frequency")
+
+plot_freq
+
+```
+
+
+```{r }
+  plot_freq <- ggplot(data = bi_freq[order(-bi_freq$frequency),][1:15, ], aes(x = reorder(words, -frequency), y=frequency)) +
+    geom_bar(stat="identity", fill="red") + theme(axis.text.x = element_text(angle = 45)) + 
+    ggtitle("Top Bigram") + xlab("words") +  ylab("frequency")
+  
+  plot_freq
+
+
+```
+
+
+```{r }
+  plot_freq <- ggplot(data = tri_freq[order(-tri_freq$frequency),][1:15, ], aes(x = reorder(words, -frequency), y=frequency)) +
+    geom_bar(stat="identity", fill="red") + theme(axis.text.x = element_text(angle = 45)) + 
+    ggtitle("Top Trigram") + xlab("words") +  ylab("frequency")
+  
+  plot_freq
+
+```
